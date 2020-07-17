@@ -43,6 +43,9 @@ def instantiate_inspection_api(amun_api_url: str) -> InspectionApi:
 
 def get_inspection_status(amun_api_url: str, inspection_id: str) -> dict:
     """Get status dictionary of the given inspection."""
+    print(
+        "Reached lib.py: amun_api {} and inspect {}".format(amun_api_url, inspection_id)
+    )
     api_instance = instantiate_inspection_api(amun_api_url)
     api_response = api_instance.get_inspection_status(inspection_id)
     api_response = api_response.to_dict()
@@ -52,7 +55,7 @@ def get_inspection_status(amun_api_url: str, inspection_id: str) -> dict:
         status = api_response.pop("status")
     except KeyError:
         if "error" in api_response:
-            err = api_response['error']
+            err = api_response["error"]
             raise Exception(f"Inspection status could not be retrieved: {err}")
         else:
             raise Exception("Inspection status could not be retrieved.")
@@ -63,16 +66,18 @@ def get_inspection_status(amun_api_url: str, inspection_id: str) -> dict:
 def is_inspection_finished(amun_api_url: str, inspection_id: str) -> bool:
     """Check if the given inspection is finished."""
     status = get_inspection_status(amun_api_url, inspection_id)
-    build_finished = status['build']['state'] == 'terminated'
+    build_finished = status["build"]["state"] == "terminated"
     if not build_finished:
         return False
 
     inspection_finished: bool
-    if status['job'] is None:
+    if status["job"] is None:
         # Inspection job was not requested to run
         inspection_finished = False
     else:
-        inspection_finished = status['job']['completions'] == status["job"].get("succeeded", -1)
+        inspection_finished = status["job"]["completions"] == status["job"].get(
+            "succeeded", -1
+        )
 
     return inspection_finished
 
@@ -80,21 +85,14 @@ def is_inspection_finished(amun_api_url: str, inspection_id: str) -> bool:
 def has_inspection_job(amun_api_url: str, inspection_id: str) -> bool:
     """Check if the given inspection has assigned job."""
     status = get_inspection_status(amun_api_url, inspection_id)
-    return status['job'] is not None
+    return status["job"] is not None
 
 
-def inspect(
-    amun_api_url: str,
-    base: str,
-    **inspection_kwargs: Any,
-) -> Dict[str, Any]:
+def inspect(amun_api_url: str, base: str, **inspection_kwargs: Any,) -> Dict[str, Any]:
     """Submit an analysis to the inspection endpoint."""
     api_instance = instantiate_inspection_api(amun_api_url)
 
-    specification = InspectionSpecification(
-        base=base,
-        **inspection_kwargs,
-    )
+    specification = InspectionSpecification(base=base, **inspection_kwargs,)
 
     api_response = api_instance.post_inspection(specification)
     return api_response.to_dict()
@@ -104,14 +102,14 @@ def get_inspection_build_log(amun_api_url: str, inspection_id: str) -> str:
     """Get log of an inspection build, the inspection has to be successful."""
     api_instance = instantiate_inspection_api(amun_api_url)
     api_response = api_instance.get_inspection_build_log(inspection_id)
-    return api_response.to_dict()['log']
+    return api_response.to_dict()["log"]
 
 
 def get_inspection_job_logs(amun_api_url: str, inspection_id: str) -> List[dict]:
     """Get logs of an inspection job, the inspection has to be successful."""
     api_instance = instantiate_inspection_api(amun_api_url)
     api_response = api_instance.get_inspection_job_logs(inspection_id)
-    return api_response.to_dict()['logs']
+    return api_response.to_dict()["logs"]
 
 
 def _remove_nullable(obj: Any) -> Any:
@@ -137,9 +135,11 @@ def _remove_nullable(obj: Any) -> Any:
     return result
 
 
-def get_inspection_specification(amun_api_url: str, inspection_id: str) -> Tuple[dict, str]:
+def get_inspection_specification(
+    amun_api_url: str, inspection_id: str
+) -> Tuple[dict, str]:
     """Get specification of an inspection, the inspection has to be successful."""
     api_instance = instantiate_inspection_api(amun_api_url)
     api_response = api_instance.get_inspection_specification(inspection_id)
     api_response = api_response.to_dict()
-    return _remove_nullable(api_response['specification']), api_response['created']
+    return _remove_nullable(api_response["specification"]), api_response["created"]
